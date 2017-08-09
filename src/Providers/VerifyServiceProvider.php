@@ -24,26 +24,23 @@ class VerifyServiceProvider extends ServiceProvider
             __DIR__.'/../../database/seeds/' => base_path('database/seeds')
         ], 'seeds');
 
-//		\Auth::extend('verify', function($app)
-//		{
-//			return new VerifyGuard(
-//				new VerifyUserProvider(
-//                    $app['session.store'],
-//					$app['config']['auth.model']
-//				),
-//                $app['session.store']
-//			);
-//
-//		});
         \Auth::extend('verify', function($app, $name, array $config) {
             // Вернуть экземпляр Illuminate\Contracts\Auth\Guard...
 
-            return new VerifyGuard(
+            $guard = new VerifyGuard(
                 $name,
                 new VerifyUserProvider($app['hash'], $config['model']),
                 $app['session.store'],
                 $app->request
             );
+            $guard->setCookieJar($this->app['cookie']);
+            $guard->setDispatcher($this->app['events']);
+            $guard->setRequest($this->app->refresh('request', $guard, 'setRequest'));
+            return $guard;
+        });
+
+        \Auth::provider('verify', function($app, array $config) {
+            return new VerifyUserProvider($app['hash'], $config['model']);
         });
     }
 
